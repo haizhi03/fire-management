@@ -5,6 +5,7 @@
 *.ear
 target/
 .mvn/
+.kiro
 mvnw
 mvnw.cmd
 

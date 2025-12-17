@@ -35,6 +35,11 @@ const routes = [
         path: 'map',
         name: 'Map',
         component: () => import('@/views/MapSimple.vue')
+      },
+      {
+        path: 'collection',
+        name: 'DataCollection',
+        component: () => import('@/views/DataCollection.vue')
       }
     ]
   }

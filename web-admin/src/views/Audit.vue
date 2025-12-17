@@ -292,9 +292,17 @@ onMounted(() => {
   gap: 20px;
 }
 
+.audit-container {
+  position: relative;
+  z-index: 1;
+}
+
 .search-card,
 .table-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {

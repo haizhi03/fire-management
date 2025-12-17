@@ -1,5 +1,13 @@
 <template>
   <div class="dashboard-container">
+    <!-- 消防安全标语 - 打字机效果 -->
+    <div class="slogan-banner">
+      <div class="slogan-content">
+        <span class="slogan-icon">🔥</span>
+        <span class="slogan-text">{{ displayText }}<span class="cursor">|</span></span>
+      </div>
+    </div>
+
     <!-- 统计卡片 -->
     <el-row :gutter="20" class="stats-row">
       <el-col :span="6">
@@ -55,6 +63,15 @@
               <div class="stat-label">待审核</div>
             </div>
           </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 子弹图展示 -->
+    <el-row :gutter="20" class="charts-row">
+      <el-col :span="24">
+        <el-card class="chart-card">
+          <div ref="bulletChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -120,8 +137,59 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import * as echarts from 'echarts'
+import { calculateMetrics, getBulletChartOption } from '@/utils/bulletChart'
 
 const router = useRouter()
+
+// 消防安全标语列表
+const slogans = [
+  '油锅起火不用慌，快关火源盖锅盖',
+  '消防安全同心同行，平安中山共建共享',
+  '电脑且有防火墙，人脑更须防火心',
+  '消防隐患要消除，中山人民才享福',
+  '中山拥抱消防，消防助力中山',
+  '火星虽小莫轻视，燃尽基业悔断肠',
+  '与火灾作斗争，是我们共同的责任',
+  '多一点消防意识，谋中山民生福祉',
+  '星星之火可燎原，中山防火记心间',
+  '消防安全连你我，平安福城美万家'
+]
+
+const displayText = ref('')
+let sloganIndex = 0
+let charIndex = 0
+let isDeleting = false
+let typewriterTimer = null
+
+// 打字机效果
+const typeWriter = () => {
+  const currentSlogan = slogans[sloganIndex]
+  
+  if (!isDeleting) {
+    // 打字
+    displayText.value = currentSlogan.substring(0, charIndex + 1)
+    charIndex++
+    
+    if (charIndex === currentSlogan.length) {
+      // 打完一句，等待后开始删除
+      isDeleting = true
+      typewriterTimer = setTimeout(typeWriter, 2000)
+      return
+    }
+  } else {
+    // 删除
+    displayText.value = currentSlogan.substring(0, charIndex - 1)
+    charIndex--
+    
+    if (charIndex === 0) {
+      // 删完，切换到下一句
+      isDeleting = false
+      sloganIndex = (sloganIndex + 1) % slogans.length
+    }
+  }
+  
+  typewriterTimer = setTimeout(typeWriter, isDeleting ? 50 : 100)
+}
 
 const stats = ref({
   total: 0,
@@ -133,10 +201,12 @@ const stats = ref({
 const typeChartRef = ref(null)
 const trendChartRef = ref(null)
 const statusChartRef = ref(null)
+const bulletChartRef = ref(null)
 
 let typeChart = null
 let trendChart = null
 let statusChart = null
+let bulletChart = null
 let refreshTimer = null
 
 const fetchStats = async () => {
@@ -157,9 +227,26 @@ const fetchStats = async () => {
 
 // 初始化图表
 const initCharts = () => {
+  initBulletChart()
   initTypeChart()
   initTrendChart()
   initStatusChart()
+}
+
+// 子弹图 - 关键指标达成情况
+const initBulletChart = () => {
+  if (!bulletChartRef.value) return
+  
+  if (bulletChart) {
+    bulletChart.dispose()
+  }
+  
+  bulletChart = echarts.init(bulletChartRef.value)
+  
+  const metrics = calculateMetrics(stats.value)
+  const option = getBulletChartOption(metrics)
+  
+  bulletChart.setOption(option)
 }
 
 // 设施类型分布饼图
@@ -360,6 +447,7 @@ const goToMap = () => {
 
 // 窗口大小变化时重新渲染图表
 const handleResize = () => {
+  bulletChart?.resize()
   typeChart?.resize()
   trendChart?.resize()
   statusChart?.resize()
@@ -367,6 +455,9 @@ const handleResize = () => {
 
 onMounted(() => {
   fetchStats()
+  
+  // 启动打字机效果
+  typeWriter()
   
   // 每30秒自动刷新
   refreshTimer = setInterval(fetchStats, 30000)
@@ -380,6 +471,11 @@ onBeforeUnmount(() => {
     clearInterval(refreshTimer)
   }
   
+  if (typewriterTimer) {
+    clearTimeout(typewriterTimer)
+  }
+  
+  bulletChart?.dispose()
   typeChart?.dispose()
   trendChart?.dispose()
   statusChart?.dispose()
@@ -395,6 +491,14 @@ onBeforeUnmount(() => {
   gap: 20px;
 }
 
+.stats-row,
+.charts-row,
+.quick-actions-card,
+.slogan-banner {
+  position: relative;
+  z-index: 1;
+}
+
 .stats-row {
   margin-bottom: 20px;
 }
@@ -402,11 +506,15 @@ onBeforeUnmount(() => {
 .stat-card {
   cursor: pointer;
   transition: all 0.3s;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
 .stat-content {
@@ -470,5 +578,116 @@ onBeforeUnmount(() => {
   margin: 0;
   color: #999;
   font-size: 14px;
+}
+
+.charts-row {
+  margin-bottom: 20px;
+}
+
+.chart-card {
+  height: 300px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container {
+  width: 100%;
+  height: 280px;
+}
+
+.quick-actions-card {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.quick-actions-card h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+}
+
+.action-item {
+  text-align: center;
+  padding: 20px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.action-item:hover {
+  background: rgba(64, 158, 255, 0.1);
+}
+
+.action-item h4 {
+  margin: 15px 0 5px 0;
+  color: #333;
+}
+
+.action-count {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.action-desc {
+  margin: 0;
+  color: #999;
+  font-size: 14px;
+}
+
+/* 消防安全标语样式 */
+.slogan-banner {
+  background: linear-gradient(135deg, #F56C6C 0%, #E6A23C 100%);
+  border-radius: 12px;
+  padding: 20px 30px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(245, 108, 108, 0.3);
+}
+
+.slogan-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.slogan-icon {
+  font-size: 28px;
+  animation: flame 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes flame {
+  from {
+    transform: scale(1) rotate(-5deg);
+  }
+  to {
+    transform: scale(1.1) rotate(5deg);
+  }
+}
+
+.slogan-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  min-height: 28px;
+}
+
+.cursor {
+  animation: blink 0.8s infinite;
+  font-weight: 300;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
 }
 </style>

@@ -165,7 +165,22 @@ const handleCommand = (command) => {
 }
 
 .main-content {
-  background-color: #f0f2f5;
+  background-image: url('https://zuimei.live/static/assets/backgroundPicture.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   padding: 20px;
+  position: relative;
+}
+
+.main-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
 }
 </style>

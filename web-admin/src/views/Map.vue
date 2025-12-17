@@ -366,7 +366,8 @@ const showFacilityDetail = async (facility) => {
 // 导航到设施
 const navigateToFacility = () => {
   if (currentFacility.value) {
-    const url = `https://uri.amap.com/navigation?to=${currentFacility.value.longitude},${currentFacility.value.latitude},${currentFacility.value.facilityName}&mode=walking&src=myapp`
+    const facilityName = encodeURIComponent(currentFacility.value.facilityName || '目的地')
+    const url = `https://uri.amap.com/navigation?to=${currentFacility.value.longitude},${currentFacility.value.latitude},${facilityName}&mode=walking&src=fire-management`
     window.open(url, '_blank')
   }
 }
@@ -401,8 +402,17 @@ onBeforeUnmount(() => {
   gap: 16px;
 }
 
+.map-container {
+  position: relative;
+  z-index: 1;
+}
+
 .search-panel {
   flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .stats {
@@ -416,6 +426,10 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: 500px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .map-card :deep(.el-card__body) {
